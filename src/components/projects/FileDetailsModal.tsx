@@ -69,15 +69,20 @@ export function FileDetailsModal({ document, onClose }: FileDetailsModalProps) {
   const isProcessingComplete = currentStatus === "completed";
   const processingDetails = document?.processing_details as any;
   const currentStep = PIPELINE_STEPS.find((s) => s.id === activeTab);
+  const isFailed = currentStatus === "failed";
+  const failedStep: string | undefined = processingDetails?.failed?.step;
+  const failedError: string | undefined = processingDetails?.failed?.error;
+  const pipelineStatus = isFailed ? failedStep ?? "uploading" : currentStatus;
+  const showFailedStep = isFailed && activeTab === pipelineStatus;
 
   const getStepStatus = (stepId: string) => {
     const currentPos = PIPELINE_STEPS.findIndex(
-      (step) => step.id === currentStatus
+      (step) => step.id === pipelineStatus
     );
     const stepPos = PIPELINE_STEPS.findIndex((step) => step.id === stepId);
 
     if (stepPos < currentPos) return "completed";
-    if (stepPos === currentPos) return "processing";
+    if (stepPos === currentPos) return isFailed ? "failed" : "processing";
     return "pending";
   };
 
@@ -121,7 +126,7 @@ export function FileDetailsModal({ document, onClose }: FileDetailsModalProps) {
 
   useEffect(() => {
     if (document) {
-      setActiveTab(currentStatus);
+      setActiveTab(pipelineStatus);
       setSelectedChunk(null);
       setChunks([]);
     }
@@ -159,7 +164,7 @@ export function FileDetailsModal({ document, onClose }: FileDetailsModalProps) {
           )}
 
           {/* Show Partitioning Step */}
-          {activeTab === "partitioning" && (
+          {activeTab === "partitioning" && !showFailedStep && (
             <PartitioningStep
               status={getStepStatus("partitioning")}
               elementsFound={processingDetails?.partitioning?.elements_found}
@@ -167,7 +172,7 @@ export function FileDetailsModal({ document, onClose }: FileDetailsModalProps) {
           )}
 
           {/* Show Chunking Step */}
-          {activeTab === "chunking" && (
+          {activeTab === "chunking" && !showFailedStep && (
             <ChunkingStep
               status={getStepStatus("chunking")}
               chunkingData={processingDetails?.chunking}
@@ -177,7 +182,7 @@ export function FileDetailsModal({ document, onClose }: FileDetailsModalProps) {
           )}
 
           {/* Show Summarising Step */}
-          {activeTab === "summarising" && (
+          {activeTab === "summarising" && !showFailedStep && (
             <SummarisingStep
               status={getStepStatus("summarising")}
               summarisingData={processingDetails?.summarising}
@@ -185,13 +190,15 @@ export function FileDetailsModal({ document, onClose }: FileDetailsModalProps) {
           )}
 
           {/* Show Generic Steps for other steps */}
-          {!["completed", "partitioning", "chunking", "summarising"].includes(
-            activeTab
-          ) && (
+          {(showFailedStep ||
+            !["completed", "partitioning", "chunking", "summarising"].includes(
+              activeTab
+            )) && (
             <GenericStep
               stepName={currentStep?.name || "Processing"}
               description={currentStep?.description || "Processing step"}
               status={getStepStatus(activeTab)}
+              errorMessage={showFailedStep ? failedError : undefined}
             />
           )}
         </div>
