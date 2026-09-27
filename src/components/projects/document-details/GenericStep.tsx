@@ -4,12 +4,14 @@ interface GenericStepProps {
   stepName: string;
   description: string;
   status: "completed" | "processing" | "failed" | "pending";
+  errorMessage?: string;
 }
 
 export function GenericStep({
   stepName,
   description,
   status,
+  errorMessage,
 }: GenericStepProps) {
   const getIcon = () => {
     switch (status) {
@@ -55,6 +57,11 @@ export function GenericStep({
                 Processing failed at this step
               </span>
             </div>
+            {errorMessage && (
+              <p className="mt-3 text-sm text-red-300/80 break-words">
+                {errorMessage}
+              </p>
+            )}
           </div>
         );
       default:
